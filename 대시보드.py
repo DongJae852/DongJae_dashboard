@@ -25,7 +25,7 @@ def load_data(path, mtime):
 
 
 # — 데이터 파일 경로 (필요 시 수정)
-EXCEL_PATH = r"C:\Users\이현지\Desktop\시그니처팟_월별_판매량.xlsx"
+EXCEL_PATH = "시그니처팟_월별_판매량.xlsx"
 
 # 파일 최종 수정 시간을 구해서 mtime 인자로 넘기면
 # Excel 파일이 변경될 때마다 캐시가 무효화됩니다.
