@@ -7,9 +7,11 @@ import matplotlib
 import numpy as np
 import os
 
-# — 한글 폰트 패치
-matplotlib.rc('font', family='Malgun Gothic')
-plt.rcParams['axes.unicode_minus'] = False
+# ── 한글 폰트 로드 ──
+font_path = "fonts/NanumGothic.ttf"            # 상대경로로 지정
+fm.fontManager.addfont(font_path)               # 폰트 매니저에 등록
+plt.rc("font", family="Nanum Gothic")           # Matplotlib 기본폰트 설정
+plt.rcParams["axes.unicode_minus"] = False      # 마이너스 깨짐 방지
 
 # — 페이지 설정
 st.set_page_config(
