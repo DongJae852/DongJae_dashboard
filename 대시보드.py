@@ -153,12 +153,23 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import numpy as np
+import matplotlib.pyplot as plt
+import matplotlib.font_manager as fm
+import requests
 
-# ── 한글 폰트 로드 ──
-font_path = "fonts/NanumGothic.ttf"            # 레포 루트/fonts/NanumGothic.ttf
-fm.fontManager.addfont(font_path)               # 폰트 매니저에 등록
-plt.rc("font", family="Nanum Gothic")           # Matplotlib 기본폰트 설정
-plt.rcParams["axes.unicode_minus"] = False      # 마이너스 깨짐 방지
+from io import BytesIO
+
+# ── 한글 폰트(나눔고딕) 웹에서 동적 로드 ──
+font_url = (
+    "https://github.com/google/fonts/raw/main/ofl/nanumgothic/"
+    "NanumGothic-Regular.ttf"
+)
+resp = requests.get(font_url)
+resp.raise_for_status()
+ttf = BytesIO(resp.content)
+fm.fontManager.addfont(ttf)
+plt.rc("font", family="Nanum Gothic")
+plt.rcParams["axes.unicode_minus"] = False
 
 # — 페이지 설정
 st.set_page_config(
