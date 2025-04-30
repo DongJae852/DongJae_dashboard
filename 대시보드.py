@@ -1,38 +1,28 @@
+# app.py
+
 import os
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import numpy as np
-import matplotlib.pyplot as plt
-import matplotlib.font_manager as fm
 import requests
 import tempfile
 
-from io import BytesIO
-
- # ── 한글 폰트 동적 로드 ──
-font_url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
-resp = requests.get(font_url)
-resp.raise_for_status()
-ttf = BytesIO(resp.content)
-fm.fontManager.addfont(ttf)
-plt.rc("font", family="Nanum Gothic")
+# ── 한글 폰트(나눔고딕) 웹에서 동적 로드 ──
 font_url = (
     "https://github.com/google/fonts/raw/main/ofl/nanumgothic/"
     "NanumGothic-Regular.ttf"
 )
 resp = requests.get(font_url)
 resp.raise_for_status()
-
-# 임시 파일로 저장
 with tempfile.NamedTemporaryFile(suffix=".ttf", delete=False) as tmp:
     tmp.write(resp.content)
     tmp_path = tmp.name
 
-fm.fontManager.addfont(tmp_path)          # 파일 경로를 넘김
+fm.fontManager.addfont(tmp_path)
 plt.rc("font", family="Nanum Gothic")
- plt.rcParams["axes.unicode_minus"] = False
+plt.rcParams["axes.unicode_minus"] = False
 
 # — 페이지 설정
 st.set_page_config(
@@ -43,16 +33,15 @@ st.set_page_config(
 
 @st.cache_data
 def load_data(path, mtime):
-    _ = mtime   # 캐시 무효화용 인자
+    _ = mtime
     return pd.read_excel(path, sheet_name=["판매점", "직영점"])
 
-# — 데이터 파일 경로 (레포 루트 기준 상대 경로)
+# — 데이터 파일 경로 (레포 루트 기준)
 EXCEL_PATH = "시그니처팟_월별_판매량.xlsx"
 if not os.path.exists(EXCEL_PATH):
     st.error(f"데이터 파일이 없습니다: '{EXCEL_PATH}'")
     st.stop()
 
-# 파일 수정 시간 포함해 캐시 무효화
 mtime = os.path.getmtime(EXCEL_PATH)
 sheets = load_data(EXCEL_PATH, mtime)
 
@@ -82,17 +71,9 @@ ax.set_ylabel("판매수량")
 ax.set_title("월별 전체 판매수량")
 plt.xticks(rotation=45)
 
-# — 막대 위에 라벨 붙이기
 bar_offset = max(monthly_total.values) * 0.01
 for x, y in zip(monthly_total.index, monthly_total.values):
-    ax.text(
-        x,
-        y + bar_offset,
-        f"{int(y):,}",
-        ha='center',
-        va='bottom',
-        fontsize=9
-    )
+    ax.text(x, y + bar_offset, f"{int(y):,}", ha='center', va='bottom', fontsize=9)
 
 plt.tight_layout()
 st.pyplot(fig)
@@ -109,19 +90,10 @@ ax.set_ylabel("판매수량")
 ax.set_title(f"{item} 판매 추이")
 plt.xticks(rotation=45)
 
-# — 각 점에 라벨 붙이기 (오프셋 0.3%)
 offset = max(series.values[~np.isnan(series.values)]) * 0.003
 for x, y in zip(series.index, series.values):
-    if np.isnan(y):
-        continue
-    ax.text(
-        x,
-        y + offset,
-        f"{int(y):,}",
-        ha='center',
-        va='bottom',
-        fontsize=9
-    )
+    if not np.isnan(y):
+        ax.text(x, y + offset, f"{int(y):,}", ha='center', va='bottom', fontsize=9)
 
 plt.tight_layout()
 st.pyplot(fig)
@@ -143,22 +115,12 @@ ax.set_title(f"상위 {top_n}개 품목 판매 추이")
 ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15), ncol=6, fontsize=8)
 plt.xticks(rotation=45)
 
-# — 각 점에 라벨 붙이기
+y_offset_base = df_top.max().max() * 0.01
 for it in top_items:
     ys = df_top[it].values
-    y_offset = max(ys) * 0.01
     for x, y in zip(df_top.index, ys):
-        if not pd.isna(y):
-            ax.text(
-                x,
-                y + y_offset,
-                f"{int(y):,}",
-                ha='center',
-                va='bottom',
-                fontsize=8
-            )
+        if not np.isnan(y):
+            ax.text(x, y + y_offset_base, f"{int(y):,}", ha='center', va='bottom', fontsize=8)
 
 plt.tight_layout()
 st.pyplot(fig)
-
-
