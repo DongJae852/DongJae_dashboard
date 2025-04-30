@@ -6,6 +6,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import numpy as np
 import os
+import matplotlib.font_manager as fm
 
 # ── 한글 폰트 로드 ──
 font_path = "fonts/NanumGothic.ttf"            # 상대경로로 지정
