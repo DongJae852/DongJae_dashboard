@@ -156,20 +156,32 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as fm
 import requests
+import tempfile
 
 from io import BytesIO
 
-# ── 한글 폰트(나눔고딕) 웹에서 동적 로드 ──
+ # ── 한글 폰트 동적 로드 ──
+font_url = "https://github.com/google/fonts/raw/main/ofl/nanumgothic/NanumGothic-Regular.ttf"
+resp = requests.get(font_url)
+resp.raise_for_status()
+ttf = BytesIO(resp.content)
+fm.fontManager.addfont(ttf)
+plt.rc("font", family="Nanum Gothic")
 font_url = (
     "https://github.com/google/fonts/raw/main/ofl/nanumgothic/"
     "NanumGothic-Regular.ttf"
 )
 resp = requests.get(font_url)
 resp.raise_for_status()
-ttf = BytesIO(resp.content)
-fm.fontManager.addfont(ttf)
+
+# 임시 파일로 저장
+with tempfile.NamedTemporaryFile(suffix=".ttf", delete=False) as tmp:
+    tmp.write(resp.content)
+    tmp_path = tmp.name
+
+fm.fontManager.addfont(tmp_path)          # 파일 경로를 넘김
 plt.rc("font", family="Nanum Gothic")
-plt.rcParams["axes.unicode_minus"] = False
+ plt.rcParams["axes.unicode_minus"] = False
 
 # — 페이지 설정
 st.set_page_config(
