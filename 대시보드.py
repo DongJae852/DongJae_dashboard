@@ -37,7 +37,7 @@
 #     return pd.read_excel(path, sheet_name=["판매점", "직영점"])
 
 # # — 데이터 파일 경로 (레포 루트 기준)
-# EXCEL_PATH = "시그니처팟_월별_판매량.xlsx"
+# EXCEL_PATH = "시그니처팟_월별_판매량_4월.xlsx"
 # if not os.path.exists(EXCEL_PATH):
 #     st.error(f"데이터 파일이 없습니다: '{EXCEL_PATH}'")
 #     st.stop()
