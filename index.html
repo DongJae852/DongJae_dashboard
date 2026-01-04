@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Antigravity 배송 관리 시스템</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/date-fns/2.30.0/index.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sortablejs@1.15.0/Sortable.min.js"></script>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap');
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+
+        .glass {
+            background: rgba(255, 255, 255, 0.8);
+            backdrop-filter: blur(10px);
+        }
+
+        .editable:focus {
+            outline: 2px solid #fbbf24;
+            background: #fef3c7;
+        }
+
+        .transition-all {
+            transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .drag-handle {
+            cursor: grab;
+            color: #cbd5e1;
+        }
+
+        .drag-handle:active {
+            cursor: grabbing;
+        }
+
+        .shop-hidden {
+            opacity: 0.5;
+            background-color: #f8fafc;
+        }
+
+        .sortable-ghost {
+            opacity: 0.4;
+            background: #e2e8f0;
+        }
+
+        /* Force single line headers and cells */
+        th,
+        td {
+            white-space: nowrap;
+            overflow: visible;
+            text-overflow: clip;
+        }
+    </style>
+</head>
+
+<body class="bg-slate-50 min-h-screen text-slate-900">
+    <!-- Header -->
+    <header class="sticky top-0 z-50 glass border-b border-slate-200 px-6 py-4 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <div class="bg-indigo-600 p-2 rounded-lg text-white">
+                <i data-lucide="truck" class="w-6 h-6"></i>
+            </div>
+            <h1 class="text-xl font-bold tracking-tight text-indigo-600">HAKA 물류 배송일정표</h1>
+        </div>
+        <div class="flex items-center gap-4">
+            <div id="current-course-badge"
+                class="px-3 py-1 bg-indigo-100 text-indigo-700 rounded-full text-sm font-semibold">
+                로딩 중...
+            </div>
+            <button onclick="ui.showSettings()" class="p-2 hover:bg-slate-100 rounded-full transition-all">
+                <i data-lucide="settings" class="w-5 h-5 text-slate-500"></i>
+            </button>
+        </div>
+    </header>
+
+    <main class="p-6 max-w-[1600px] mx-auto space-y-6">
+        <!-- Control Bar -->
+        <div
+            class="flex flex-wrap items-center justify-between gap-4 bg-white p-4 rounded-2xl shadow-sm border border-slate-200">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center gap-2">
+                    <button onclick="ui.prevDay()" class="p-2 hover:bg-slate-100 rounded-lg transition-all">
+                        <i data-lucide="chevron-left" class="w-5 h-5"></i>
+                    </button>
+                    <input type="date" id="target-date" onchange="ui.handleDateChange(this.value)"
+                        class="font-semibold text-lg border-none focus:ring-0 cursor-pointer">
+                    <button onclick="ui.nextDay()" class="p-2 hover:bg-slate-100 rounded-lg transition-all">
+                        <i data-lucide="chevron-right" class="w-5 h-5"></i>
+                    </button>
+                </div>
+                <button onclick="ui.setToday()"
+                    class="px-4 py-2 text-sm font-medium text-slate-600 hover:bg-slate-100 rounded-lg transition-all border border-slate-200">
+                    오늘
+                </button>
+            </div>
+
+            <div class="flex items-center gap-2">
+                <button onclick="excel.downloadTemplate()"
+                    class="flex items-center gap-2 px-4 py-2 bg-slate-50 text-slate-700 rounded-xl hover:bg-slate-100 transition-all border border-slate-200 font-medium">
+                    <i data-lucide="download" class="w-4 h-4"></i>
+                    양식 다운로드
+                </button>
+                <label
+                    class="flex items-center gap-2 px-4 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all cursor-pointer shadow-sm font-medium">
+                    <i data-lucide="upload" class="w-4 h-4"></i>
+                    엑셀 업로드
+                    <input type="file" id="excel-upload" accept=".xlsx, .xls" class="hidden"
+                        onchange="excel.handleUpload(this)">
+                </label>
+            </div>
+        </div>
+
+        <!-- Tables Container -->
+        <div id="tables-container" class="space-y-12">
+            <!-- Grouped tables will be injected here -->
+        </div>
+
+        <div id="no-data"
+            class="hidden bg-white rounded-2xl p-20 flex flex-col items-center justify-center text-slate-400 border border-slate-200">
+            <i data-lucide="calendar-x" class="w-12 h-12 mb-2 opacity-20"></i>
+            <p>해당 날짜는 배송 일정이 없습니다.</p>
+        </div>
+    </main>
+
+    <!-- Settings Modal -->
+    <div id="settings-modal" class="fixed inset-0 z-[100] hidden">
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" onclick="ui.hideSettings()"></div>
+        <div
+            class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-3xl shadow-2xl overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 border-b border-slate-100 flex items-center justify-between">
+                <h2 class="text-xl font-bold">시스템 설정</h2>
+                <button onclick="ui.hideSettings()" class="p-2 hover:bg-slate-100 rounded-full">
+                    <i data-lucide="x" class="w-5 h-5 text-slate-400"></i>
+                </button>
+            </div>
+            <div class="p-6 space-y-6">
+                <div class="space-y-2">
+                    <label class="block text-sm font-semibold text-slate-700">로테이션 기준일 (B코스 시작)</label>
+                    <input type="date" id="base-date"
+                        class="w-full px-4 py-3 rounded-xl border border-slate-200 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all">
+                    <p class="text-[12px] text-slate-400 italic">2026-01-02(금)이 코스 순환의 시작점이 됩니다.</p>
+                </div>
+                <div class="space-y-3">
+                    <label class="block text-sm font-semibold text-slate-700">휴일 관리</label>
+                    <div class="flex gap-2">
+                        <input type="date" id="new-holiday"
+                            class="flex-1 px-4 py-2 rounded-xl border border-slate-200 outline-none">
+                        <button onclick="ui.addHoliday()"
+                            class="px-4 py-2 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all font-medium">추가</button>
+                    </div>
+                    <div id="holiday-list" class="flex flex-wrap gap-2 max-h-40 overflow-y-auto">
+                        <!-- Holidays here -->
+                    </div>
+                </div>
+            </div>
+            <div class="p-6 bg-slate-50 text-right">
+                <button onclick="ui.hideSettings()"
+                    class="px-6 py-2 bg-indigo-600 text-white rounded-xl hover:bg-indigo-700 transition-all font-semibold shadow-lg shadow-indigo-200">
+                    저장 후 닫기
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="src/storage.js"></script>
+    <script src="src/api.js"></script>
+    <script src="src/scheduler.js"></script>
+    <script src="src/excel.js"></script>
+    <script src="src/ui.js"></script>
+    <script>
+        // Initialize Lucide icons
+        lucide.createIcons();
+    </script>
+</body>
+
+</html>
